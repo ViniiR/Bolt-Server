@@ -13,7 +13,8 @@ let create_book_of_json str : Lib_types.Book.create_book =
     let chapter =
       match member "chapter" json with
       | `Float v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected JSON type Float")
+      | `Int v -> float_of_int v
+      | _ -> raise (Errors.Incorrect_type "Expected JSON type Float or Int")
     in
     let cover_image =
       match member "cover_image" json with
@@ -60,8 +61,9 @@ let patch_book_of_json str : Lib_types.Book.patch_book =
     let chapter_opt =
       match member "chapter" json with
       | `Float v -> Some v
+      | `Int v -> Some (float_of_int v)
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected JSON type Float")
+      | _ -> raise (Errors.Incorrect_type "Expected JSON type Float or Int")
     in
     let cover_image_opt =
       match member "cover_image" json with
