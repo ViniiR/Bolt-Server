@@ -135,21 +135,24 @@ let update_book (pool : pool) (book : Lib_types.Book.patch_book) (id : int) =
       (fun (module Db : Caqti_lwt.CONNECTION) ->
         let query =
           Caqti_type.(
-            t5 (option string) (option float) (option string) int64 int ->? int)
+            t8 (option string) (option float) (option string) int64 int (option string) (option bool) (option bool) ->? int)
             (* syntax-sql *)
             {|
                UPDATE books SET
                  title = COALESCE($1, title),
                  chapter = COALESCE($2, chapter),
                  image_link = COALESCE($3, image_link),
-                 last_modified = $4
+                 last_modified = $4,
+                 kind = COALESCE($6, kind),
+                 on_hiatus = COALESCE($7, on_hiatus),
+                 is_finished = COALESCE($8, is_finished)
                WHERE id = $5 RETURNING id;
             |}
             [@@ocamlformat "disable"]
         in
         let timestamp = Int64.of_float @@ Unix.time () in
         Db.find_opt query
-          (book.title_opt, book.chapter_opt, book.cover_image_opt, timestamp, id))
+          (book.title_opt, book.chapter_opt, book.cover_image_opt, timestamp, id, book.kind_opt, book.on_hiatus_opt, book.is_finished_opt))
       pool
   in
   match res with
