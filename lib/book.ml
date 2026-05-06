@@ -46,7 +46,7 @@ let post : routeHandler =
   let pool = get_pool req in
   let book : create_book = Lib_parse.create_book_of_json body in
   let* result = Database.create_book pool book in
-  match result with Ok _ -> empty `Created | Error e -> raise e
+  match result with Ok v -> respond @@ string_of_int v | Error e -> raise e
 
 (* NOTE: if id is sent via request.body it will be ignored *)
 (* INFO: removed since you never really get to override all the data on the database *)

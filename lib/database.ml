@@ -95,19 +95,29 @@ let create_book (pool : pool) (book : Lib_types.Book.create_book) =
       (fun (module Db : Caqti_lwt.CONNECTION) ->
         let timestamp = Int64.of_float @@ Unix.time () in
         let query =
-          Caqti_type.(t7 string float string int64 string bool bool ->. unit)
-            "INSERT INTO books (title, chapter, image_link, last_modified, kind, on_hiatus, is_finished) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)"
+          Caqti_type.(t7 string float string int64 string bool bool ->? int)
+            (* syntax-sql *)
+            {|
+                INSERT INTO books (title, chapter, image_link, last_modified, kind, on_hiatus, is_finished)
+                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+            |}
         in
         let title, chapter, cover_image, kind, on_hiatus, is_finished = book in
-        Db.exec query (title, chapter, cover_image, timestamp, kind, on_hiatus, is_finished))
+        Db.find_opt query
+          (title, chapter, cover_image, timestamp, kind, on_hiatus, is_finished))
       pool
   in
   match res with
-  | Ok _ -> Lwt_result.return ()
+  | Ok opt -> (
+      match opt with
+      | Some v -> Lwt_result.return v
+      | None ->
+          Lwt_result.fail
+            (Errors.Failed_to_create "Could not create book"))
   | Error e ->
       log_error e;
-      Lwt_result.fail @@ handle_caqti_error e
+      Lwt_result.fail
+      @@ handle_caqti_error e
            ~on_query_error:(Errors.Failed_to_create "Could not create book")
 
 (* Change one book in the database *)
@@ -152,7 +162,14 @@ let update_book (pool : pool) (book : Lib_types.Book.patch_book) (id : int) =
         in
         let timestamp = Int64.of_float @@ Unix.time () in
         Db.find_opt query
-          (book.title_opt, book.chapter_opt, book.cover_image_opt, timestamp, id, book.kind_opt, book.on_hiatus_opt, book.is_finished_opt))
+          ( book.title_opt,
+            book.chapter_opt,
+            book.cover_image_opt,
+            timestamp,
+            id,
+            book.kind_opt,
+            book.on_hiatus_opt,
+            book.is_finished_opt ))
       pool
   in
   match res with
@@ -167,7 +184,8 @@ let update_book (pool : pool) (book : Lib_types.Book.patch_book) (id : int) =
             (Errors.Update_on_nonexistent "Query on non existent id"))
   | Error e ->
       log_error e;
-      Lwt_result.fail @@ handle_caqti_error e
+      Lwt_result.fail
+      @@ handle_caqti_error e
            ~on_query_error:(Errors.Failed_to_update "Could not update book")
 
 (** Delete a book from the database *)
@@ -194,5 +212,6 @@ let delete_book (pool : pool) (id : int) =
       )
   | Error e ->
       log_error e;
-      Lwt_result.fail @@ handle_caqti_error e
+      Lwt_result.fail
+      @@ handle_caqti_error e
            ~on_query_error:(Errors.Failed_to_delete "Could not delete book")
