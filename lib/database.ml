@@ -62,12 +62,12 @@ let get_all_books (pool : pool) =
   match res with
   | Ok v ->
       if List.length v >= 1 then Lwt_result.return v
-      else Lwt_result.fail (Errors.Failed_to_fetch "No books to be found")
+      else Lwt_result.fail (Errors.Failed_to_fetch "No books found")
   | Error e ->
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_fetch "No books to be found")
+           ~on_query_error:(Errors.Failed_to_fetch "Failed to get books")
 
 (** Get a single book from the database *)
 let get_book (pool : pool) (id : int) =
@@ -86,7 +86,7 @@ let get_book (pool : pool) (id : int) =
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_fetch "books not found")
+           ~on_query_error:(Errors.Failed_to_fetch "Failed to get book")
 
 (** Create one book in the database *)
 let create_book (pool : pool) (book : Lib_types.Book.create_book) =
@@ -112,12 +112,13 @@ let create_book (pool : pool) (book : Lib_types.Book.create_book) =
       match opt with
       | Some v -> Lwt_result.return v
       | None ->
-          Lwt_result.fail (Errors.Failed_to_create "Could not create book"))
+          Lwt_result.fail
+            (Errors.Failed_to_create "Book creation returned nothing"))
   | Error e ->
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_create "Could not create book")
+           ~on_query_error:(Errors.Failed_to_create "Failed to create book")
 
 (* Change one book in the database *)
 (** INFO: removed since you never really get to override all the data on the
@@ -177,15 +178,16 @@ let update_book (pool : pool) (book : Lib_types.Book.patch_book) (id : int) =
       | Some v ->
           if v = id then Lwt_result.return ()
           else
-            Lwt_result.fail (Errors.Update_on_incorrect "Query on incorrect id")
+            Lwt_result.fail
+              (Errors.Update_on_incorrect "Book patch on incorrect id")
       | None ->
           Lwt_result.fail
-            (Errors.Update_on_nonexistent "Query on non existent id"))
+            (Errors.Update_on_nonexistent "Book patch on non existent id"))
   | Error e ->
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_update "Could not update book")
+           ~on_query_error:(Errors.Failed_to_update "Failed to update book")
 
 (** Delete a book from the database *)
 let delete_book (pool : pool) (id : int) =
@@ -205,16 +207,18 @@ let delete_book (pool : pool) (id : int) =
       | Some v ->
           if v = id then Lwt_result.return ()
           else
-            Lwt_result.fail (Errors.Update_on_incorrect "Query on incorrect id")
+            Lwt_result.fail
+              (Errors.Update_on_incorrect "Book delete on incorrect id")
       | None ->
-          Lwt_result.fail (Errors.Delete_on_nonexistent "Query on incorrect id")
-      )
+          Lwt_result.fail
+            (Errors.Delete_on_nonexistent "Book delete on non existent id"))
   | Error e ->
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_delete "Could not delete book")
+           ~on_query_error:(Errors.Failed_to_delete "Failed to delete book")
 
+(** Delete multiple books from the database *)
 let delete_books (pool : pool) (list : int list) =
   let* res =
     Caqti_lwt_unix.Pool.use
@@ -234,10 +238,9 @@ let delete_books (pool : pool) (list : int list) =
       if not @@ List.is_empty v then Lwt_result.return v
       else
         Lwt_result.fail
-        @@ Errors.Failed_to_delete
-             "Failed to delete books, Query returned nothing"
+        @@ Errors.Failed_to_delete "Book delete on incorrect ids"
   | Error e ->
       log_error e;
       Lwt_result.fail
       @@ handle_caqti_error e
-           ~on_query_error:(Errors.Failed_to_delete "Could not delete books")
+           ~on_query_error:(Errors.Failed_to_delete "Failed to delete books")
