@@ -104,5 +104,25 @@ module Db = struct
     exception Delete_on_incorrect of string
     exception Delete_on_nonexistent of string
     exception Internal_error of string
+    exception Parsing_error of string
   end
+
+  (* let int_list : int list Caqti_type.t = *)
+  (*   let encode list = Ok (Array.of_list list) in *)
+  (*   let decode array = Ok (Array.to_list array) in *)
+  (*   Caqti_type.(custom ~encode ~decode (array int)) *)
+  let int_list : int list Caqti_type.t =
+    let encode list =
+      let str = String.concat "," @@ List.map string_of_int list in
+      let res = ("{" ^ str ^ "}")in
+      Ok res
+    in
+    let decode array =
+      try
+        let content = String.sub array 1 (String.length array - 2) in
+        if content = "" then Ok []
+        else Ok (List.map int_of_string (String.split_on_char ',' content))
+      with _ -> raise @@ Errors.Parsing_error "Failed to parse SQL array"
+    in
+    Caqti_type.(custom ~encode ~decode string)
 end

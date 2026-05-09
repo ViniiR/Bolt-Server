@@ -93,3 +93,15 @@ let delete : routeHandler =
   let pool = get_pool req in
   let* result = Database.delete_book pool id in
   match result with Ok _ -> empty `No_Content | Error e -> raise e
+
+let delete_many : routeHandler =
+ fun req ->
+  let* body = Dream.body req in
+  let list = Lib_parse.int_list_of_json body in
+  let pool = get_pool req in
+  let* result = Database.delete_books pool list in
+  match result with
+  | Ok v ->
+      let json_string = Yojson.Safe.to_string @@ Lib_parse.json_of_int_list v in
+      json json_string
+  | Error e -> raise e

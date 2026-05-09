@@ -80,6 +80,7 @@ let app =
          Dream.put "/book/:id" (fun _ -> Dream.empty `Method_Not_Allowed);
          Dream.patch "/book/:id" (fun req -> Book.patch req);
          Dream.delete "/book/:id" (fun req -> Book.delete req);
+         Dream.delete "/books" (fun req -> Book.delete_many req);
          (* Root *)
          Dream.get "/" (fun _ ->
              Root.render ~text:"We do not serve HTML ;)" |> Dream.html);

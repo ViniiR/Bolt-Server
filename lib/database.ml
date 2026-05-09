@@ -99,7 +99,7 @@ let create_book (pool : pool) (book : Lib_types.Book.create_book) =
             (* syntax-sql *)
             {|
                 INSERT INTO books (title, chapter, image_link, last_modified, kind, on_hiatus, is_finished)
-                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+                VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;
             |}
         in
         let title, chapter, cover_image, kind, on_hiatus, is_finished = book in
@@ -112,8 +112,7 @@ let create_book (pool : pool) (book : Lib_types.Book.create_book) =
       match opt with
       | Some v -> Lwt_result.return v
       | None ->
-          Lwt_result.fail
-            (Errors.Failed_to_create "Could not create book"))
+          Lwt_result.fail (Errors.Failed_to_create "Could not create book"))
   | Error e ->
       log_error e;
       Lwt_result.fail
@@ -215,3 +214,30 @@ let delete_book (pool : pool) (id : int) =
       Lwt_result.fail
       @@ handle_caqti_error e
            ~on_query_error:(Errors.Failed_to_delete "Could not delete book")
+
+let delete_books (pool : pool) (list : int list) =
+  let* res =
+    Caqti_lwt_unix.Pool.use
+      (fun (module Db : Caqti_lwt.CONNECTION) ->
+        let query =
+          Caqti_type.(Lib_types.Db.int_list ->* int)
+            (* syntax-sql *)
+            {|
+                DELETE FROM books WHERE id = ANY(CAST($1 AS int[])) RETURNING id;
+            |}
+        in
+        Db.collect_list query list)
+      pool
+  in
+  match res with
+  | Ok v ->
+      if not @@ List.is_empty v then Lwt_result.return v
+      else
+        Lwt_result.fail
+        @@ Errors.Failed_to_delete
+             "Failed to delete books, Query returned nothing"
+  | Error e ->
+      log_error e;
+      Lwt_result.fail
+      @@ handle_caqti_error e
+           ~on_query_error:(Errors.Failed_to_delete "Could not delete books")

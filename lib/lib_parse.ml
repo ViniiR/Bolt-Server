@@ -1,5 +1,26 @@
 open! Lib_types.Book
 
+let int_list_of_json str : int list =
+  let open! Yojson.Basic in
+  let open! Yojson.Basic.Util in
+  try
+    let json = from_string str in
+    match json with
+    | `List v ->
+        if List.for_all (function `Int _ | `Float _ -> true | _ -> false) v
+        then List.map to_int v
+        else raise (Errors.Incorrect_type "Expected JSON type array of integer")
+    | _ -> raise (Errors.Incorrect_type "Expected JSON type array")
+  with
+  | Yojson.Json_error e ->
+      Printf.eprintf "%s" e;
+      Stdlib.flush stderr;
+      raise (Errors.Incorrect_type "Expected JSON type array")
+  | Yojson.Basic.Util.Type_error (msg, _) (* _ will often be null *) ->
+      Printf.eprintf "\nError: %s\n" msg;
+      Stdlib.flush stderr;
+      raise (Errors.Invalid_json "JSON is not valid")
+
 let create_book_of_json str : Lib_types.Book.create_book =
   let open! Yojson.Basic in
   let open! Yojson.Basic.Util in
@@ -123,3 +144,6 @@ let json_of_book (book : book) : Yojson.Safe.t =
 
 let json_of_book_list (list : book list) : Yojson.Safe.t =
   `List (List.map (fun book -> json_of_book book) list)
+
+let json_of_int_list (list : int list) : Yojson.Safe.t =
+  `List (List.map (fun id -> `Int id) list)
