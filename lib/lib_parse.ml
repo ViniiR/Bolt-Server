@@ -15,7 +15,7 @@ let int_list_of_json str : int list =
   | Yojson.Json_error e ->
       Printf.eprintf "%s" e;
       Stdlib.flush stderr;
-      raise (Errors.Incorrect_type "Expected JSON type Array")
+      raise (Errors.Invalid_json "JSON is not valid")
   | Yojson.Basic.Util.Type_error (msg, _) (* _ will often be null *) ->
       Printf.eprintf "\nError: %s\n" msg;
       Stdlib.flush stderr;
@@ -29,33 +29,46 @@ let create_book_of_json str : Lib_types.Book.create_book =
     let title =
       match member "title" json with
       | `String v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected 'title' to be JSON type String")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'title' to be JSON type String")
     in
     let chapter =
       match member "chapter" json with
       | `Float v -> v
       | `Int v -> float_of_int v
-      | _ -> raise (Errors.Incorrect_type "Expected 'chapter' to be JSON type Float or Int")
+      | _ ->
+          raise
+            (Errors.Incorrect_type
+               "Expected 'chapter' to be JSON type Float or Int")
     in
     let cover_image =
       match member "cover_image" json with
       | `String v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected 'cover_image' to be JSON type String")
+      | _ ->
+          raise
+            (Errors.Incorrect_type
+               "Expected 'cover_image' to be JSON type String")
     in
     let kind =
       match member "kind" json with
       | `String v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected 'kind' to be JSON type String")
+      | _ ->
+          raise (Errors.Incorrect_type "Expected 'kind' to be JSON type String")
     in
     let on_hiatus =
       match member "on_hiatus" json with
       | `Bool v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected 'on_hiatus' to be JSON type Bool")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'on_hiatus' to be JSON type Bool")
     in
     let is_finished =
       match member "is_finished" json with
       | `Bool v -> v
-      | _ -> raise (Errors.Incorrect_type "Expected 'is_finished' to be JSON type Bool")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'is_finished' to be JSON type Bool")
     in
     (title, chapter, cover_image, kind, on_hiatus, is_finished)
   with
@@ -77,38 +90,51 @@ let patch_book_of_json str : Lib_types.Book.patch_book =
       match member "title" json with
       | `String v -> Some v
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'title' to be JSON type String")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'title' to be JSON type String")
     in
     let chapter_opt =
       match member "chapter" json with
       | `Float v -> Some v
       | `Int v -> Some (float_of_int v)
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'chapter' to be JSON type Float or Int")
+      | _ ->
+          raise
+            (Errors.Incorrect_type
+               "Expected 'chapter' to be JSON type Float or Int")
     in
     let cover_image_opt =
       match member "cover_image" json with
       | `String v -> Some v
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'cover_image' to be JSON type String")
+      | _ ->
+          raise
+            (Errors.Incorrect_type
+               "Expected 'cover_image' to be JSON type String")
     in
     let kind_opt =
       match member "kind" json with
       | `String v -> Some v
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'kind' to be JSON type String")
+      | _ ->
+          raise (Errors.Incorrect_type "Expected 'kind' to be JSON type String")
     in
     let on_hiatus_opt =
       match member "on_hiatus" json with
       | `Bool v -> Some v
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'on_hiatus' to be JSON type Bool")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'on_hiatus' to be JSON type Bool")
     in
     let is_finished_opt =
       match member "is_finished" json with
       | `Bool v -> Some v
       | `Null -> None
-      | _ -> raise (Errors.Incorrect_type "Expected 'is_finished' to be JSON type Bool")
+      | _ ->
+          raise
+            (Errors.Incorrect_type "Expected 'is_finished' to be JSON type Bool")
     in
     {
       title_opt;
