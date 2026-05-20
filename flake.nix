@@ -8,32 +8,48 @@
         pkgs = import nixpkgs {inherit system;};
         lib = pkgs.lib;
     in {
-        # Will be built by docker image
-        packages.${system}.default = pkgs.ocamlPackages.buildDunePackage {
-            pname = "server";
-            version = "0.1";
-            src = ./.;
+        packages.${system} = {
+            # NOTE: docker load < $(nix build .#container)
+            container = pkgs.dockerTools.buildImage {
+                name = "bolt-server";
+                copyToRoot = pkgs.buildEnv {
+                    name = "image-root";
+                    paths = [self.packages.${system}.default];
+                    pathsToLink = ["/bin"];
+                };
+                config = {
+                    Cmd = ["/bin/server"];
+                    ExposedPorts = {
+                        "5001/tcp" = {};
+                    };
+                };
+            };
+            default = pkgs.ocamlPackages.buildDunePackage {
+                pname = "server";
+                version = "0.1";
+                src = ./.;
 
-            duneVersion = "3";
+                duneVersion = "3";
 
-            nativeBuildInputs = with pkgs.ocamlPackages; [
-                ocaml
-                dune_3
-                findlib
-                dream
-            ];
-            buildInputs = with pkgs.ocamlPackages; [
-                dream
-                dream-pure
-                lwt
-                lwt_ppx
-                caqti
-                caqti-lwt
-                caqti-async
-                caqti-driver-postgresql
-                yojson
-                alcotest
-            ];
+                nativeBuildInputs = with pkgs.ocamlPackages; [
+                    ocaml
+                    dune_3
+                    findlib
+                    dream
+                ];
+                buildInputs = with pkgs.ocamlPackages; [
+                    dream
+                    dream-pure
+                    lwt
+                    lwt_ppx
+                    caqti
+                    caqti-lwt
+                    caqti-async
+                    caqti-driver-postgresql
+                    yojson
+                    alcotest
+                ];
+            };
         };
 
         devShells.${system}.default = pkgs.mkShell rec {
